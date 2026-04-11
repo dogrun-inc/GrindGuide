@@ -1,0 +1,57 @@
+<mxfile host="65bd71144e">
+    <diagram id="rkZLUHnjsPVtvsxlsp_b" name="ページ1">
+        <mxGraphModel dx="1270" dy="1013" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="C4モデルでユースケース（&lt;b data-index-in-node=&quot;0&quot; data-path-to-node=&quot;18,0,0&quot;&gt;C4モデル的には System Context&lt;/b&gt;&amp;nbsp;コンテキスト図）を書いてみる&lt;div&gt;https://zenn.dev/uniquevision/articles/625e00137b75af&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="20" width="520" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="" style="group;strokeWidth=0;" parent="1" vertex="1" connectable="0">
+                    <mxGeometry x="310" y="190" width="120" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="" style="whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=2;" parent="6" vertex="1">
+                    <mxGeometry x="-30" y="-30" width="140" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="" style="shape=or;whiteSpace=wrap;html=1;rotation=270;strokeWidth=2;" parent="6" vertex="1">
+                    <mxGeometry x="15" y="25" width="50" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=2;" parent="6" vertex="1">
+                    <mxGeometry x="15" width="50" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="アプリケーションのランドスケープ" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="88" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="KAZBMYque8VFNsr7hVDU-7" value="コーヒー粉粒度計測システム&lt;div&gt;コーヒー粉の写真または同システムで生成した計測データからコーヒー粉の長径に関する統計情報を提供する&lt;/div&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="250" y="360" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="KAZBMYque8VFNsr7hVDU-8" value="写真のスケール計測システム" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="640" y="560" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="KAZBMYque8VFNsr7hVDU-9" value="粉体の長径・面積計測システム&lt;div&gt;headless Fijiを使って写真の決められた枠内にある粉体の長さと面積を計測する&lt;/div&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="440" y="560" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="KAZBMYque8VFNsr7hVDU-10" value="KDEプロット作成システム" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="10" y="560" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="KAZBMYque8VFNsr7hVDU-11" value="統計量算出・推定システム" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="210" y="560" width="180" height="80" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="UqKu0vEoN_bq94V-MRPK" name="ページ2">
+        <mxGraphModel dx="662" dy="692" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="FSKMa9Ep9TGa-0U0_mDl-1" value="画像のスケール取得システム" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="20" width="180" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="FSKMa9Ep9TGa-0U0_mDl-2" value="粒度計測システム（headless fiji）" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="318" width="200" height="30" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
