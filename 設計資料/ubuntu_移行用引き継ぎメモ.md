@@ -157,6 +157,55 @@ at net.imagej.patcher.HeadlessGenericDialog...
 - ROI あり / なしで比較
 - `Set Measurements...` の項目を最小化して問題箇所を切り分け
 
+## 2026-04-11 時点の追加変更
+
+- `config.py` を更新し、Linux の代表的な Fiji パスを自動検出するようにした
+- `FIJI_HEADLESS` は Linux ではデフォルト `true` にした
+- `FIJI_USE_XVFB=true` を設定すれば `xvfb-run -a` 経由で Fiji を起動できるようにした
+- `fiji_runner.py` で Fiji 実行コマンド全体をログ出力するようにした
+- `threshold_min` / `threshold_max` は片方だけ指定された場合に明示的にエラーにした
+- `measure_particles.ijm` は以下のように切り分けしやすくした
+  - `measurement_source.jpg` を保存
+  - `mask.jpg` に加えて `analysis_mask.jpg` も保存
+  - ROI は選択状態のまま解析するのではなく、`Clear Outside` 済みの専用 mask に反映する形へ変更
+  - `Analyze Particles...` は `display clear` ベースに変更
+  - `Drawing of analysis_mask` ができた場合は `outlines.jpg` として保存
+- OpenCV 未導入環境でも import で落ちないよう、`fiji_runner.py` の calibration import を遅延化した
+- Fiji 実機がない状態でも確認できる `test_fiji_runner_unit.py` を追加し、helper の挙動を固定した
+
+## Ubuntu で次にそのまま試すコマンド例
+
+まず依存を入れる。
+
+```bash
+pip install -r service/requirements-dev.txt
+```
+
+Fiji 実行ファイルを指定して headless で試す。
+
+```bash
+export FIJI_EXECUTABLE=/opt/Fiji.app/ImageJ-linux64
+export FIJI_HEADLESS=true
+python service/app/test_fiji_runner.py \
+  --input service/tests/IMG_7066.jpg \
+  --output service/tests/out.csv \
+  --threshold-min 80 \
+  --threshold-max 255
+```
+
+もし headless で `Analyze Particles...` がまだ不安定なら、仮想ディスプレイ経由でも試す。
+
+```bash
+export FIJI_EXECUTABLE=/opt/Fiji.app/ImageJ-linux64
+export FIJI_HEADLESS=false
+export FIJI_USE_XVFB=true
+python service/app/test_fiji_runner.py \
+  --input service/tests/IMG_7066.jpg \
+  --output service/tests/out.csv \
+  --threshold-min 80 \
+  --threshold-max 255
+```
+
 ## 期待するCSVフォーマット
 
 想定出力は次のような形式。
