@@ -1,7 +1,7 @@
 # 1. System Context
 システム名
 
-Powder Measurement & Comparison Service
+GrindGuide
 
 ## 目的
 
