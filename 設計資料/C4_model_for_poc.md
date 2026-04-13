@@ -49,6 +49,129 @@ ROI / Fiji条件
 ### 特徴
 - 完全stateless（セッション内のみ）
 
+### 最低限API
+
+- `POST /api/analyze/images`
+  - JPEG画像を複数受け取り、Calibration → Fiji → 分布構築 → KDE/統計を実行する
+- `POST /api/compare/csv`
+  - 既存CSVを複数受け取り、分布構築 → KDE/統計のみを実行する
+
+### `POST /api/analyze/images` の想定リクエスト
+
+- Content-Type: `multipart/form-data`
+- form field `payload`
+  - リクエスト全体のJSON文字列
+- form field `files`
+  - JPEGファイルを1..n件
+
+#### `payload` の最低限スキーマ
+
+```json
+{
+  "samples": [
+    {
+      "file_key": "sample_01.jpg",
+      "sample_name": "Comandante 24 clicks"
+    },
+    {
+      "file_key": "sample_02.jpg",
+      "sample_name": "Comandante 20 clicks"
+    }
+  ],
+  "options": {
+    "scale_diameter_mm": 50.0,
+    "threshold_min": 80,
+    "threshold_max": 255,
+    "roi_diameter_scale": 0.95,
+    "output_unit": "mm"
+  }
+}
+```
+
+#### `samples` の意味
+
+- `file_key`
+  - `files` で送った各JPEGと対応付けるキー
+  - 当面はファイル名と一致させる運用を想定
+- `sample_name`
+  - UI表示や結果返却時の識別名
+
+#### `options` の意味
+
+- `scale_diameter_mm`
+  - スケール円の実寸直径
+- `threshold_min`
+  - Fijiに渡す下限threshold
+- `threshold_max`
+  - Fijiに渡す上限threshold
+- `roi_diameter_scale`
+  - Calibrationで検出した円から計算するROI直径の係数
+- `output_unit`
+  - 結果の基準単位。当面は `mm` を優先
+
+### `POST /api/analyze/images` の最低限レスポンス
+
+- Content-Type
+  - 当面は `application/json` または `application/zip`
+- 返却内容
+  - サンプルごとの raw CSV
+  - サンプルごとの要約統計
+  - 複数サンプル比較用のKDEプロット
+
+#### JSON返却時の最小イメージ
+
+```json
+{
+  "samples": [
+    {
+      "sample_name": "Comandante 24 clicks",
+      "raw_csv_path": "results/sample_01_raw.csv",
+      "particle_count": 995,
+      "unit": "mm"
+    }
+  ],
+  "plot_path": "results/kde.png",
+  "statistics": {
+    "compared_samples": 2
+  }
+}
+```
+
+### `POST /api/compare/csv` の想定リクエスト
+
+- Content-Type: `multipart/form-data`
+- form field `payload`
+  - 比較対象サンプルのJSON文字列
+- form field `files`
+  - Fiji出力CSVを1..n件
+
+#### `payload` の最低限スキーマ
+
+```json
+{
+  "samples": [
+    {
+      "file_key": "sample_01.csv",
+      "sample_name": "Reference A",
+      "unit": "mm"
+    },
+    {
+      "file_key": "sample_02.csv",
+      "sample_name": "Reference B",
+      "unit": "mm"
+    }
+  ]
+}
+```
+
+### API設計メモ
+
+- JPEG実体はJSONに埋め込まず、`multipart/form-data` でファイル本体を送る
+- ファイルごとの属性は `samples[]` に寄せ、実行条件は `options` に分ける
+- ファイルと属性の対応は `file_key` で明示する
+- 将来的に `grinder`, `grind_setting`, `brew_method` などの属性を `samples[]` へ追加できる
+- 将来的にレスポンスは ZIP 一括返却へ拡張できる
+
 ## 2-2. Calibration Container（JPEG時のみ）
 - 画像中のスケール円を検出し、pixel と実寸の比率を計算する。
 

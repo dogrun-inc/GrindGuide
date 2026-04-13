@@ -1,1 +1,1 @@
-"""Service package for the powder measurement PoC."""
+"""Service package for the powder measurement application."""

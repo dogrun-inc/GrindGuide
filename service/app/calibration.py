@@ -111,7 +111,7 @@ def detect_scale_circle(image_path: Path, scale_diameter_mm: float) -> dict:
     else:
         print("[calibration] preferred_circles empty, falling back to valid_circles")
 
-    # PoCでは優先候補群のうち最大円を採用
+    # 現行実装では優先候補群のうち最大円を採用
     circle = max(candidate_pool, key=lambda c: c[2])
     radius_px = float(circle[2])
     diameter_px = radius_px * 2.0

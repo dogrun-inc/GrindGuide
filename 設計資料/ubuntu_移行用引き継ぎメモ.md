@@ -2,20 +2,20 @@
 
 ## 目的
 
-- 現在 macOS 上で進めている PoC を、Ubuntu 環境へ移して継続開発できるようにする。
+- 現在 macOS 上で進めている初期実装と検証内容を、Ubuntu 環境へ移して継続開発できるようにする。
 - 特に `calibration.py` と `fiji_runner.py` / `measure_particles.ijm` の現在地を引き継ぐ。
 - AWS 本番を見据えて、Fiji 実行系を Linux 前提で再検証する。
 
 ## 結論サマリ
 
-- `calibration.py` の PoC は概ね成功している。
+- `calibration.py` の検証は概ね成功している。
 - `fiji_runner.py` から `calibration.py` を呼び出し、得られたスケールと円ROIを Fiji macro に渡す流れまでは実装済み。
 - ただし Fiji の `Analyze Particles...` は macOS + Fiji アプリ実行環境で不安定。
 - 特に `--headless` 実行では `HeadlessGenericDialog` 由来の `NullPointerException` が発生した。
 - `--headless` を外しても、`Analyze Particles...` の結果は `nResults=0` で、期待するCSVはまだ得られていない。
 - Ubuntu 環境で Fiji 実行条件を再検証する価値が高い。
 
-## calibration PoC の状態
+## calibration の状態
 
 - 対象ファイル: [service/app/calibration.py](/Users/oec/Desktop/docs/Metadog/粒度計測サービス/service/app/calibration.py)
 - 対象テスト: [service/app/test_calibration.py](/Users/oec/Desktop/docs/Metadog/粒度計測サービス/service/app/test_calibration.py)
@@ -28,19 +28,19 @@
 - 優先候補がなければ、画像内に収まる候補の最大円を採用する。
 - `px_per_mm` と `mm_per_px` を返す。
 
-### PoC の判断
+### 検証結果の判断
 
 - 実画像 `service/tests/IMG_7066.jpg` で、期待直径 `2720px` に対して `2708.96px` を検出。
 - 相対誤差は約 `0.4%`。
 - 粉体測定用途では実用上ほぼ許容できるという判断。
-- calibration の PoC は一旦固定してよい状態。
+- calibration は一旦固定してよい状態。
 
 ### メモ
 
 - デバッグ `print` が残っている。
 - 後で本番向けにする場合は、`logging` か `debug` フラグへ寄せる余地がある。
 
-## Fiji runner PoC の状態
+## Fiji runner の状態
 
 - 対象ファイル:
   - [service/app/fiji_runner.py](/Users/oec/Desktop/docs/Metadog/粒度計測サービス/service/app/fiji_runner.py)
@@ -235,6 +235,6 @@ Area,StdDev,Feret,FeretX,FeretY,FeretAngle,MinFeret
 
 ## 引き継ぎ時の一言メモ
 
-- calibration PoC は成功扱いでよい。
+- calibration は成功扱いでよい。
 - Fiji macro は mask 作成までは良いが、`Analyze Particles...` が詰まりどころ。
 - Ubuntu で Fiji 実行系を再検証するのが次の主戦場。

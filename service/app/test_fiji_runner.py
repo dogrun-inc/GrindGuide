@@ -27,7 +27,7 @@ except ImportError:
 
 def build_parser() -> ArgumentParser:
     parser = ArgumentParser(
-        description="Run the Fiji particle-measurement PoC for a single image."
+        description="Run the Fiji particle-measurement flow for a single image."
     )
     parser.add_argument("--input", required=True, help="Path to the input image.")
     parser.add_argument("--output", required=True, help="Path to the output CSV.")

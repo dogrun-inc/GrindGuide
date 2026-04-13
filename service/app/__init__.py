@@ -1,1 +1,1 @@
-"""Application package for the powder measurement PoC."""
+"""Application package for the powder measurement application."""
