@@ -102,6 +102,7 @@ flags = (
 measurements = (
     Measurements.AREA       |
     Measurements.STD_DEV    |
+    Measurements.SHAPE_DESCRIPTORS |
     Measurements.CENTER_OF_MASS |
     Measurements.FERET
 )
@@ -130,6 +131,6 @@ if n > 0:
     rt.saveAs(output_path)
 else:
     with open(output_path, "w") as f:
-        f.write("Area,StdDev,XM,YM,Feret,FeretX,FeretY,FeretAngle,MinFeret\n")
+        f.write("Area,StdDev,XM,YM,Circ.,AR,Round,Feret,FeretX,FeretY,FeretAngle,MinFeret\n")
 
 print("[measure_particles] done")

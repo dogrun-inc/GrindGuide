@@ -23,6 +23,7 @@ JPEG画像またはCSVを入力として、粉体の長さ分布を算出し、C
 - 複数サンプルを比較できる
 - 粒度分布と抽出条件の関係を蓄積できる
 - 将来的にAIによる最適な設定の提案を受けられる
+- 長時間処理でもジョブ受付・進捗確認・結果取得を分けて扱える
 
 ## 現行実装との関係
 
@@ -43,6 +44,7 @@ JPEG画像またはCSVを入力として、粉体の長さ分布を算出し、C
 
 - JPEG複数入力 API
 - CSV比較 API
+- 非同期ジョブ管理
 - 分布構築
 - KDEプロット / 統計値計算
 - 結果返却形式の整備
@@ -92,6 +94,7 @@ JPEG画像またはCSVを入力として、粉体の長さ分布を算出し、C
 - Knowledge DB
 - Feedback Store
 - Recommendation Policy Layer
+- Job Management Container
 
 # 5. Current Containers
 ## 5-1. API Container
@@ -99,18 +102,25 @@ JPEG画像またはCSVを入力として、粉体の長さ分布を算出し、C
 ### 役割
 - multipart upload受付
 - 入力モード判定（JPEG or CSV）
+- ジョブ受付
 - 一時処理パイプライン起動
-- 結果まとめて返却
+- ジョブ状態返却
+- 結果取得導線の返却
 
 ### 特徴
 - 完全stateless（セッション内のみ）
+- 長時間処理は同期完了を待たず、ジョブIDを返す
 
 ### 最低限API
 
 - `POST /api/analyze/images`
-  - JPEG画像を複数受け取り、Calibration → Fiji → 分布構築 → KDE/統計を実行する
+  - JPEG画像を複数受け取り、ジョブを受け付ける
 - `POST /api/compare/csv`
-  - 既存CSVを複数受け取り、分布構築 → KDE/統計のみを実行する
+  - 既存CSVを複数受け取り、ジョブを受け付ける
+- `GET /api/jobs/{job_id}`
+  - ジョブ状態と進捗を返す
+- `GET /api/jobs/{job_id}/result`
+  - 完了済みジョブの結果を返す
 
 ## 5-2. Calibration Container（JPEG時のみ）
 - 画像中のスケール円を検出し、pixel と実寸の比率を計算する
@@ -154,6 +164,29 @@ JPEG画像またはCSVを入力として、粉体の長さ分布を算出し、C
 
 ### 出力
 - ZIP または JSON + binary
+
+## 5-7. Job Management Container
+### 役割
+- ジョブID発行
+- ジョブ状態管理
+- 進捗管理
+- 完了後の結果参照先管理
+
+### 状態
+- `queued`
+- `running`
+- `completed`
+- `failed`
+
+### 管理したい情報
+- `job_id`
+- `job_type`
+- `submitted_at`
+- `total_samples`
+- `completed_samples`
+- `current_sample_name`
+- `result_location`
+- `error_message`
 
 # 6. Future Containers
 ## 6-1. AI Advisor Container
@@ -225,6 +258,10 @@ User
   ↓
 API
   ↓
+Job Accepted
+  ↓
+Job Management
+  ↓
 Calibration（各画像）
   ↓
 Fiji Worker（各画像）
@@ -244,6 +281,10 @@ User
 User
   ↓
 API
+  ↓
+Job Accepted
+  ↓
+Job Management
   ↓
 Distribution Builder
   ↓
@@ -272,6 +313,26 @@ Recommendation Response
 User
 ```
 
+## ケースD: ジョブ状態確認と結果取得
+
+```
+User
+  ↓
+GET /api/jobs/{job_id}
+  ↓
+Job Management
+  ↓
+Status Response
+
+User
+  ↓
+GET /api/jobs/{job_id}/result
+  ↓
+Result Bundle
+  ↓
+Completed Result
+```
+
 # 8. API Surface
 ## 現行API
 
@@ -280,9 +341,9 @@ User
 
 ## 将来追加API候補
 
+- `GET /api/jobs/{job_id}`
+- `GET /api/jobs/{job_id}/result`
 - `POST /api/recommend`
-- `POST /api/recommend/from-image`
-- `POST /api/recommend/from-csv`
 - `POST /api/feedback`
 
 ## request / response の基本方針
@@ -291,6 +352,37 @@ User
 - ファイルごとの属性は `samples[]` にまとめる
 - 実行条件は `options` に分ける
 - 将来的に recommendation 系 API でも同様の入力設計を踏襲する
+- 長時間処理の初回レスポンスでは、結果本体ではなくジョブ受付結果を返す
+- クライアントは `job_id` を使って進捗確認と結果取得を行う
+
+## ジョブ受付レスポンスの方針
+
+- `POST /api/analyze/images`
+- `POST /api/compare/csv`
+  は処理完了を待たずに `202 Accepted` を返す
+
+### ジョブ受付レスポンス例
+
+```json
+{
+  "job_id": "job_20260414_001",
+  "status": "queued",
+  "status_url": "/api/jobs/job_20260414_001",
+  "result_url": "/api/jobs/job_20260414_001/result"
+}
+```
+
+### ジョブ状態レスポンス例
+
+```json
+{
+  "job_id": "job_20260414_001",
+  "status": "running",
+  "total_samples": 5,
+  "completed_samples": 2,
+  "current_sample_name": "Comandante 24 clicks"
+}
+```
 
 # 9. Data Model
 ## Sample metadata
@@ -346,6 +438,7 @@ User
 - sample metadata
 - distribution summary
 - shape feature summary
+- job or result reference
 - comparison target
 - desired brew profile
 
@@ -423,6 +516,7 @@ User
 - Docker 化
 - API コンテナ
 - Fiji 実行コンテナ
+- Job 管理コンテナ
 - 将来的な DB コンテナ
 
 ## 一時ファイル
@@ -436,12 +530,14 @@ User
 
 - セッション単位の一時保存を基本とする
 - 長期保存が必要なデータだけ別ストアへ移す
+- ジョブ進捗と結果参照情報は、API再試行や結果取得に耐えられる形で保持する
 
 # 13. Non-Functional Requirements
 ## 性能
 
 - 画像1枚あたりの処理時間を実用範囲に収める
 - 複数サンプル処理でも過度に待たせない
+- 長時間処理でもクライアントを同期ブロックしない
 
 ## 再現性
 
@@ -457,12 +553,14 @@ User
 
 - Calibration / Fiji / Distribution / AI を疎結合に保つ
 - コンテナ単位に入れ替え可能にする
+- API と長時間処理ワーカーの責務を分ける
 
 # 14. Risks / Open Questions
 - Fiji実行の安定性をどこまで担保できるか
 - 粒度指標として何を中心に扱うか
 - `Circ.`, `AR`, `Round`, `FeretAngle` が抽出効率にどの程度寄与するか
 - KDEの見せ方をどうするか
+- 非同期ジョブ状態をどこに保持するか
 - AI提案の品質をどう評価するか
 - 既知データをどう収集し、どう信頼度付けするか
 - RAG がどの段階で必要になるか
@@ -471,6 +569,7 @@ User
 ## Phase 1
 - JPEG解析 API を完成させる
 - CSV比較 API を完成させる
+- 非同期ジョブ受付と状態確認 API を用意する
 
 ## Phase 2
 - Distribution Builder と KDE / Statistics を実装する

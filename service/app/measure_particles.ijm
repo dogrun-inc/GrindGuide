@@ -89,7 +89,7 @@ print("[DEBUG] analysisMaskTitle after saveAs: " + analysisMaskTitle);
 // 6. 測定項目の設定
 print("[measure_particles] before Set Measurements");
 run("Set Measurements...",
-    "area standard center feret's redirect=[" + measurementSourceTitle + "] decimal=3");
+    "area standard center shape feret's redirect=[" + measurementSourceTitle + "] decimal=3");
 print("[measure_particles] after Set Measurements");
 
 // 7. 粒子解析
@@ -119,7 +119,7 @@ print("[measure_particles] nResults=" + nResults);
 if (nResults > 0) {
     saveAs("Results", outputPath);
 } else {
-    File.saveString("Area,StdDev,XM,YM,Feret,FeretX,FeretY,FeretAngle,MinFeret\n", outputPath);
+    File.saveString("Area,StdDev,XM,YM,Circ.,AR,Round,Feret,FeretX,FeretY,FeretAngle,MinFeret\n", outputPath);
 }
 
 if (isOpen("Drawing of " + analysisMaskTitle)) {
