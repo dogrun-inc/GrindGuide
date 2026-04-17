@@ -4,6 +4,8 @@ import pandas as pd
 import pytest
 
 from service.app.services.measurement_parser import (
+    convert_feret_px_bounds_to_mm,
+    filter_measurement_values,
     get_measurement_values,
     normalize_measurement_dataframe,
     read_measurement_csv,
@@ -42,3 +44,20 @@ def test_get_measurement_values_returns_numeric_array():
 def test_get_measurement_values_rejects_missing_attribute():
     with pytest.raises(ValueError, match="Attribute 'Round' not found"):
         get_measurement_values(Path("service/app/tmp/Results_7084.csv"), "Round")
+
+
+def test_convert_feret_px_bounds_to_mm_returns_expected_thresholds():
+    min_mm, max_mm = convert_feret_px_bounds_to_mm(px_per_mm=54.0, min_feret_px=10, max_feret_px=20)
+
+    assert min_mm == pytest.approx(10 / 54.0)
+    assert max_mm == pytest.approx(20 / 54.0)
+
+
+def test_filter_measurement_values_applies_bounds():
+    values = filter_measurement_values(
+        values=[0.1, 0.2, 0.3, 0.4],
+        min_value=0.15,
+        max_value=0.35,
+    )
+
+    assert values.tolist() == [0.2, 0.3]

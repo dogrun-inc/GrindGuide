@@ -145,6 +145,8 @@ JPEG画像またはCSVを入力として、粉体の長さ分布を算出し、C
 - pixel or mm 正規化
 - 欠損値除去
 - スケール適用（必要時）
+- raw measurement を保持したまま、後処理フィルタでノイズ除去できるようにする
+- スマホ撮影時は `min_feret_px` を基準に下限を決め、`px_per_mm` から mm へ換算して適用する
 
 ## 5-5. KDE / Statistics Container
 ### 役割
@@ -355,6 +357,14 @@ Completed Result
 - 長時間処理の初回レスポンスでは、結果本体ではなくジョブ受付結果を返す
 - クライアントは `job_id` を使って進捗確認と結果取得を行う
 
+## 将来拡張メモ: measurement filter
+
+- raw CSV は Fiji の出力をできるだけそのまま保持する
+- ノイズ除去は Fiji 側で強く削るより、後処理フィルタで調整できるようにする
+- 特にスマホ撮影では、解像力より明確に細かい粒子はノイズとして扱う
+- 当面のデフォルト方針は `min_feret_px = 10` を候補とし、`px_per_mm` から `min_feret_mm` へ換算して適用する
+- `max` は当面デフォルト無しとし、必要時のみ指定する
+
 ## 将来拡張メモ: replicate grouping
 
 - 将来的に、複数の測定ファイルを1つの代表サンプルとして束ねるオプションを追加できるようにする
@@ -434,6 +444,7 @@ Completed Result
 - 形状特徴量 summary
   - 例: `AR`, `Circ.`, `Round`, `FeretAngle` の代表値や分布要約
 - 将来的に replicate を束ねた combined distribution も扱えるようにする
+- raw distribution と filtered distribution を区別して扱えるようにする
 
 ## KDE / statistics result
 
@@ -448,6 +459,7 @@ Completed Result
 - sample metadata
 - distribution summary
 - shape feature summary
+- applied filter metadata
 - job or result reference
 - comparison target
 - desired brew profile
@@ -571,6 +583,7 @@ Completed Result
 - `Circ.`, `AR`, `Round`, `FeretAngle` が抽出効率にどの程度寄与するか
 - KDEの見せ方をどうするか
 - 非同期ジョブ状態をどこに保持するか
+- `min_feret_px` のデフォルト値をどこで妥当とみなすか
 - replicate grouping を導入する場合、どの単位で1サンプルとみなすか
 - AI提案の品質をどう評価するか
 - 既知データをどう収集し、どう信頼度付けするか
