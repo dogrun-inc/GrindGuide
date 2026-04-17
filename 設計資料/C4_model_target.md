@@ -355,6 +355,14 @@ Completed Result
 - 長時間処理の初回レスポンスでは、結果本体ではなくジョブ受付結果を返す
 - クライアントは `job_id` を使って進捗確認と結果取得を行う
 
+## 将来拡張メモ: replicate grouping
+
+- 将来的に、複数の測定ファイルを1つの代表サンプルとして束ねるオプションを追加できるようにする
+- 主な用途は、同一条件で複数回測定した結果を1サンプル群として比較すること
+- 実装する場合は、統計量の単純平均ではなく、生データを結合して1つの distribution として扱う方式を優先する
+- API では `file_key` の単一指定に加えて、`file_keys` の複数指定や `replicates` のような表現を検討する
+- KDE / 統計 / AI提案の downstream は、束ねた distribution を通常の1サンプルと同様に扱える構成を維持する
+
 ## ジョブ受付レスポンスの方針
 
 - `POST /api/analyze/images`
@@ -389,6 +397,7 @@ Completed Result
 
 - `sample_name`
 - `file_key`
+- `file_keys` or `replicates` (将来拡張)
 - `grinder`
 - `grind_setting`
 - `brew_method`
@@ -424,6 +433,7 @@ Completed Result
 - 外れ値処理結果
 - 形状特徴量 summary
   - 例: `AR`, `Circ.`, `Round`, `FeretAngle` の代表値や分布要約
+- 将来的に replicate を束ねた combined distribution も扱えるようにする
 
 ## KDE / statistics result
 
@@ -561,6 +571,7 @@ Completed Result
 - `Circ.`, `AR`, `Round`, `FeretAngle` が抽出効率にどの程度寄与するか
 - KDEの見せ方をどうするか
 - 非同期ジョブ状態をどこに保持するか
+- replicate grouping を導入する場合、どの単位で1サンプルとみなすか
 - AI提案の品質をどう評価するか
 - 既知データをどう収集し、どう信頼度付けするか
 - RAG がどの段階で必要になるか
