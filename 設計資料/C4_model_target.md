@@ -30,6 +30,7 @@ JPEG画像またはCSVを入力として、粉体の長さ分布を算出し、C
 - 現行実装の中心は `Calibration` と `Fiji Worker` による粒度計測である
 - 本資料はその先の API、比較、AI提案、RAG まで含めた完成形の設計方針をまとめる
 - 現行実装の詳細は [C4_model_for_poc.md](/mnt/meta-dog/GrindGuide/%E8%A8%AD%E8%A8%88%E8%B3%87%E6%96%99/C4_model_for_poc.md) を参照する
+- AI提案機能の詳細設計は [AI提案機能設計.md](/mnt/meta-dog/GrindGuide/%E8%A8%AD%E8%A8%88%E8%B3%87%E6%96%99/AI%E6%8F%90%E6%A1%88%E6%A9%9F%E8%83%BD%E8%A8%AD%E8%A8%88.md) を参照する
 
 # 2. Scope
 ## 現在実装済みの範囲
