@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 class SampleResult(BaseModel):
     sample_name: str = Field(..., min_length=1)
     particle_count: int = Field(..., ge=0)
+    filtered_particle_count: int | None = Field(default=None, ge=0)
     unit: Literal["mm", "px"]
     raw_csv_path: str | None = None
     mean: float | None = None
@@ -25,6 +26,9 @@ class StatisticsSummary(BaseModel):
     mean_of_medians: float | None = None
     attribute: str | None = None
     pairwise_test_note: str | None = None
+    min_feret_mm: float | None = None
+    min_area_mm2: float | None = None
+    max_feret_mm: float | None = None
 
 
 class AnalyzeImagesResponse(BaseModel):

@@ -7,7 +7,9 @@ from .kde_stats import (
 )
 from .measurement_parser import (
     convert_feret_px_bounds_to_mm,
+    filter_measurement_dataframe,
     filter_measurement_values,
+    get_measurement_values_from_dataframe,
     get_measurement_values,
     normalize_measurement_dataframe,
     read_measurement_csv,
@@ -22,7 +24,9 @@ __all__ = [
     "compute_pairwise_tests",
     "compute_sample_statistics",
     "convert_feret_px_bounds_to_mm",
+    "filter_measurement_dataframe",
     "filter_measurement_values",
+    "get_measurement_values_from_dataframe",
     "get_measurement_values",
     "normalize_measurement_dataframe",
     "read_measurement_csv",

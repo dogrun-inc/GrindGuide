@@ -31,6 +31,9 @@ FIJI_EXECUTABLE = os.getenv("FIJI_EXECUTABLE", _find_default_fiji_executable())
 MAX_UPLOAD_FILES = int(os.getenv("MAX_UPLOAD_FILES", "20"))
 DEFAULT_SCALE_DIAMETER_MM = float(os.getenv("DEFAULT_SCALE_DIAMETER_MM", "50.0"))
 ROI_DIAMETER_SCALE = float(os.getenv("ROI_DIAMETER_SCALE", "0.95"))
+DEFAULT_MIN_FERET_MM = float(os.getenv("DEFAULT_MIN_FERET_MM", "0.2"))
+DEFAULT_MIN_AREA_MM2 = float(os.getenv("DEFAULT_MIN_AREA_MM2", "0.02"))
+DEFAULT_MAX_FERET_MM = float(os.getenv("DEFAULT_MAX_FERET_MM", "3.0"))
 FIJI_HEADLESS = os.getenv(
     "FIJI_HEADLESS",
     "true" if sys.platform.startswith("linux") else "false",

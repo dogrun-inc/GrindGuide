@@ -148,6 +148,14 @@ JPEG画像またはCSVを入力として、粉体の長さ分布を算出し、C
 - raw measurement を保持したまま、後処理フィルタでノイズ除去できるようにする
 - スマホ撮影時は `min_feret_px` を基準に下限を決め、`px_per_mm` から mm へ換算して適用する
 
+### 当面のデフォルトフィルタ
+
+- `min_feret_mm = 0.2`
+- `min_area_mm2 = 0.02`
+- `max_feret_mm = 3.0`
+- これらはスマホ撮影画像での初期デフォルト値として扱う
+- raw CSV は保持し、統計量とKDEは filtered distribution を用いて計算する
+
 ## 5-5. KDE / Statistics Container
 ### 役割
 - KDEプロット生成
@@ -362,8 +370,8 @@ Completed Result
 - raw CSV は Fiji の出力をできるだけそのまま保持する
 - ノイズ除去は Fiji 側で強く削るより、後処理フィルタで調整できるようにする
 - 特にスマホ撮影では、解像力より明確に細かい粒子はノイズとして扱う
-- 当面のデフォルト方針は `min_feret_px = 10` を候補とし、`px_per_mm` から `min_feret_mm` へ換算して適用する
-- `max` は当面デフォルト無しとし、必要時のみ指定する
+- 当面は `min_feret_mm = 0.2`, `min_area_mm2 = 0.02`, `max_feret_mm = 3.0` を初期デフォルトとして採用する
+- 将来的には `min_feret_px = 10` 前後を機種依存の基準として持ち、`px_per_mm` から `min_feret_mm` へ換算して適用できるようにする
 
 ## 将来拡張メモ: replicate grouping
 
@@ -583,7 +591,7 @@ Completed Result
 - `Circ.`, `AR`, `Round`, `FeretAngle` が抽出効率にどの程度寄与するか
 - KDEの見せ方をどうするか
 - 非同期ジョブ状態をどこに保持するか
-- `min_feret_px` のデフォルト値をどこで妥当とみなすか
+- `min_feret_px` を機種依存でどう補正するか
 - replicate grouping を導入する場合、どの単位で1サンプルとみなすか
 - AI提案の品質をどう評価するか
 - 既知データをどう収集し、どう信頼度付けするか
