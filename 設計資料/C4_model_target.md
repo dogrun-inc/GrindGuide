@@ -155,6 +155,7 @@ JPEG画像またはCSVを入力として、粉体の長さ分布を算出し、C
 - `max_feret_mm = 3.0`
 - これらはスマホ撮影画像での初期デフォルト値として扱う
 - raw CSV は保持し、統計量とKDEは filtered distribution を用いて計算する
+- `analyze/images` と `compare/csv` の両方で同じデフォルトフィルタを適用する
 
 ## 5-5. KDE / Statistics Container
 ### 役割
@@ -364,6 +365,7 @@ Completed Result
 - 将来的に recommendation 系 API でも同様の入力設計を踏襲する
 - 長時間処理の初回レスポンスでは、結果本体ではなくジョブ受付結果を返す
 - クライアントは `job_id` を使って進捗確認と結果取得を行う
+- 同期応答として結果を返す場合は、`raw_particle_count` と `filtered_particle_count` の両方を返し、適用したフィルタ条件を明示する
 
 ## 将来拡張メモ: measurement filter
 
@@ -453,6 +455,7 @@ Completed Result
   - 例: `AR`, `Circ.`, `Round`, `FeretAngle` の代表値や分布要約
 - 将来的に replicate を束ねた combined distribution も扱えるようにする
 - raw distribution と filtered distribution を区別して扱えるようにする
+- sampleごとに `raw_particle_count` と `filtered_particle_count` を保持する
 
 ## KDE / statistics result
 
@@ -461,6 +464,10 @@ Completed Result
 - 中央値
 - 分散
 - 比較結果
+- 適用したフィルタ条件
+  - `min_feret_mm`
+  - `min_area_mm2`
+  - `max_feret_mm`
 
 ## Recommendation request
 
