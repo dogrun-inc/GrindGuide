@@ -7,23 +7,27 @@ from uuid import uuid4
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
 try:
-    from ..config import TMP_DIR
+    from ..config import DEFAULT_MAX_FERET_MM, DEFAULT_MIN_AREA_MM2, DEFAULT_MIN_FERET_MM, TMP_DIR
     from ..models import AnalyzeImagesResponse, CompareCsvRequest, SampleResult, StatisticsSummary
     from ..services import (
         build_kde_plot_html,
         compute_pairwise_tests,
         compute_sample_statistics,
-        get_measurement_values,
+        filter_measurement_dataframe,
+        get_measurement_values_from_dataframe,
+        read_measurement_csv,
         render_kde_plot_svg,
     )
 except ImportError:
-    from config import TMP_DIR
+    from config import DEFAULT_MAX_FERET_MM, DEFAULT_MIN_AREA_MM2, DEFAULT_MIN_FERET_MM, TMP_DIR
     from models import AnalyzeImagesResponse, CompareCsvRequest, SampleResult, StatisticsSummary
     from services import (
         build_kde_plot_html,
         compute_pairwise_tests,
         compute_sample_statistics,
-        get_measurement_values,
+        filter_measurement_dataframe,
+        get_measurement_values_from_dataframe,
+        read_measurement_csv,
         render_kde_plot_svg,
     )
 
@@ -110,6 +114,9 @@ async def compare_csv(
     files_by_name = _validate_csv_files(request_model, files)
     workspace = _build_compare_workspace()
     attribute = DEFAULT_COMPARE_ATTRIBUTE
+    min_feret_mm = DEFAULT_MIN_FERET_MM
+    min_area_mm2 = DEFAULT_MIN_AREA_MM2
+    max_feret_mm = DEFAULT_MAX_FERET_MM
 
     try:
         samples_by_label = {}
@@ -120,13 +127,21 @@ async def compare_csv(
             saved_path = workspace / sample.file_key
             saved_path.write_bytes(await upload.read())
 
-            values = get_measurement_values(saved_path, attribute)
+            raw_df = read_measurement_csv(saved_path)
+            filtered_df = filter_measurement_dataframe(
+                raw_df,
+                min_feret_mm=min_feret_mm,
+                max_feret_mm=max_feret_mm,
+                min_area_mm2=min_area_mm2,
+            )
+            values = get_measurement_values_from_dataframe(filtered_df, attribute)
             sample_stats = compute_sample_statistics(values, clip_zero=True)
             samples_by_label[sample.sample_name] = values
             sample_results.append(
                 SampleResult(
                     sample_name=sample.sample_name,
-                    particle_count=sample_stats.count,
+                    particle_count=int(len(raw_df)),
+                    filtered_particle_count=sample_stats.count,
                     unit=sample.unit,
                     raw_csv_path=str(saved_path),
                     mean=sample_stats.mean,
@@ -171,5 +186,8 @@ async def compare_csv(
             mean_of_medians=(sum(median_values) / len(median_values)) if median_values else None,
             attribute=attribute,
             pairwise_test_note=pairwise_test_note,
+            min_feret_mm=min_feret_mm,
+            min_area_mm2=min_area_mm2,
+            max_feret_mm=max_feret_mm,
         ),
     )
