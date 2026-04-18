@@ -185,14 +185,27 @@ JPEG画像またはCSVを入力として、粉体の長さ分布を算出し、C
 
 ### 状態
 - `queued`
+  - 受付済み、まだバックグラウンド処理開始前
 - `running`
+  - バックグラウンド処理中
 - `completed`
+  - 正常終了し、結果取得可能
 - `failed`
+  - エラー終了
+
+### job_id 形式
+- `analyze_YYYYMMDDThhmmssZ_xxxxxxxx`
+- `compare_YYYYMMDDThhmmssZ_xxxxxxxx`
+- 先頭はジョブ種別の prefix
+- 中央は UTC タイムスタンプ
+- 末尾は `uuid4().hex[:8]` の短い識別子
 
 ### 管理したい情報
 - `job_id`
 - `job_type`
-- `submitted_at`
+- `created_at`
+- `started_at`
+- `completed_at`
 - `total_samples`
 - `completed_samples`
 - `current_sample_name`
@@ -393,10 +406,10 @@ Completed Result
 
 ```json
 {
-  "job_id": "job_20260414_001",
+  "job_id": "analyze_20260418T080000Z_ab12cd34",
   "status": "queued",
-  "status_url": "/api/jobs/job_20260414_001",
-  "result_url": "/api/jobs/job_20260414_001/result"
+  "status_url": "/api/jobs/analyze_20260418T080000Z_ab12cd34",
+  "result_url": "/api/jobs/analyze_20260418T080000Z_ab12cd34/result"
 }
 ```
 
@@ -404,11 +417,16 @@ Completed Result
 
 ```json
 {
-  "job_id": "job_20260414_001",
+  "job_id": "analyze_20260418T080000Z_ab12cd34",
+  "job_type": "analyze",
   "status": "running",
   "total_samples": 5,
   "completed_samples": 2,
-  "current_sample_name": "Comandante 24 clicks"
+  "current_sample_name": "Comandante 24 clicks",
+  "created_at": "2026-04-18T08:00:00Z",
+  "started_at": "2026-04-18T08:00:02Z",
+  "completed_at": null,
+  "error_message": null
 }
 ```
 
