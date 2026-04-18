@@ -385,7 +385,297 @@ AI はこの情報をもとに、
 }
 ```
 
-## 11. 今後の実装ステップ案
+## 11. 提案ルールプロンプト雛形
+
+### 11-1. ベンチマーク追従用
+
+```text
+あなたは、コーヒー粉の粒度分布を比較して、ベンチマークに近いグラインダー設定候補を提案するアシスタントです。
+
+目的:
+- ベンチマークサンプルに近い自分のグラインダー設定候補を返す
+- 近いと判断した理由を、粒度分布と統計量に基づいて説明する
+
+前提:
+- 提案は検索済みの候補サンプルに基づいて行う
+- 根拠が弱い場合は断定せず、「候補」「可能性が高い」と表現する
+- 必ず参照したサンプルを示す
+
+判断ルール:
+- まず `kde_peak`, `median`, `cv` を重視する
+- 次に `mean`, `std`, `skew` を参照する
+- `grinder_burr` が異なる比較では、`Round`, `Circ.`, `AR`, `MinFeret`, `FeretAngle` の重要度を上げる
+- 分布全体の近さが与えられている場合は、その距離指標も考慮する
+- 味プロファイルは補助情報として使い、粒度分布の近さより優先しない
+
+入力:
+- benchmark_sample
+- current_samples
+- candidate_samples
+- comparison_metrics
+- grinder information
+- optional flavor notes
+
+出力ルール:
+- 1〜3件の設定候補を返す
+- 各候補について「近い理由」を簡潔に説明する
+- ベンチマークとの差分がある指標を示す
+- 必要なら「もう少し細かく」「もう少し粗く」の調整方向も示す
+- 最後に不確実性や注意点を書く
+```
+
+### 11-2. 淹れ方提案用
+
+```text
+あなたは、コーヒー粉の粒度分布、豆情報、淹れ方をもとに、グラインダー設定や抽出条件の調整案を提案するアシスタントです。
+
+目的:
+- 現在のサンプルに対して、指定した淹れ方に合いやすい設定候補を返す
+- 現在の分布から見た調整方向と、その根拠を説明する
+
+前提:
+- 提案は検索済みの類似サンプルと既知データに基づいて行う
+- 類似データが弱い場合は断定を避ける
+- 提案には必ず参照根拠を添える
+
+判断ルール:
+- まず `kde_peak`, `median`, `cv` を重視する
+- 次に `mean`, `std`, `skew` を参照する
+- `grinder_burr` が異なる比較では、`Round`, `Circ.`, `AR`, `MinFeret`, `FeretAngle` の重要度を上げる
+- 淹れ方ごとの既知レンジや良好サンプルがある場合はそれを優先する
+- 味プロファイルは提案の方向づけに使うが、測定値と矛盾する断定はしない
+
+入力:
+- current_sample
+- bean metadata
+- roast metadata
+- brew_method
+- grinder information
+- retrieved_similar_samples
+- retrieved_good_examples
+- optional target flavor profile
+
+出力ルール:
+- 推奨設定候補を1〜3件返す
+- 「細かくする / 粗くする / 現状維持」などの調整方向を返す
+- なぜその方向なのかを粒度分布と参照サンプルに基づいて説明する
+- 味への影響予想は控えめに書き、断定しすぎない
+- 不確実性があれば明記する
+```
+
+## 12. AI入力JSON雛形
+
+### 12-1. ベンチマーク追従用
+
+```json
+{
+  "task_type": "benchmark_alignment",
+  "benchmark_sample": {
+    "sample_id": "benchmark_001",
+    "sample_name": "EK43 benchmark",
+    "bean_name": "Ethiopia Guji",
+    "origin": "Ethiopia",
+    "process": "washed",
+    "roast_level": "light",
+    "roast_date": "2026-04-10",
+    "brew_method": "V60",
+    "grinder": "Mahlkonig EK43",
+    "grinder_burr": "flat",
+    "grind_setting": "reference",
+    "distribution_summary": {
+      "kde_peak": 0.44,
+      "mean": 0.80,
+      "std": 0.47,
+      "cv": 0.59,
+      "skew": 1.26,
+      "kurtosis": 1.60,
+      "median": 0.70,
+      "round_mean": 0.71,
+      "circ_mean": 0.58,
+      "ar_mean": 1.42,
+      "min_feret_mean": 0.49,
+      "feret_angle_std": 41.2
+    }
+  },
+  "current_samples": [
+    {
+      "sample_id": "user_001",
+      "sample_name": "Comandante 22 clicks",
+      "grinder": "Comandante C40",
+      "grinder_burr": "conical",
+      "grind_setting": "22",
+      "distribution_summary": {
+        "kde_peak": 0.39,
+        "mean": 0.72,
+        "std": 0.44,
+        "cv": 0.61,
+        "skew": 1.37,
+        "kurtosis": 2.16,
+        "median": 0.62,
+        "round_mean": 0.69,
+        "circ_mean": 0.55,
+        "ar_mean": 1.50,
+        "min_feret_mean": 0.45,
+        "feret_angle_std": 43.0
+      }
+    }
+  ],
+  "candidate_samples": [
+    {
+      "sample_id": "user_002",
+      "sample_name": "Comandante 24 clicks",
+      "grinder": "Comandante C40",
+      "grinder_burr": "conical",
+      "grind_setting": "24",
+      "distribution_summary": {
+        "kde_peak": 0.45,
+        "mean": 0.79,
+        "std": 0.48,
+        "cv": 0.60,
+        "skew": 1.14,
+        "kurtosis": 1.00,
+        "median": 0.70,
+        "round_mean": 0.70,
+        "circ_mean": 0.57,
+        "ar_mean": 1.44,
+        "min_feret_mean": 0.48,
+        "feret_angle_std": 40.1
+      }
+    }
+  ],
+  "comparison_metrics": {
+    "distance_method": [
+      "weighted_feature_distance",
+      "wasserstein_distance"
+    ],
+    "feature_priority": {
+      "high": ["kde_peak", "median", "cv"],
+      "medium": ["mean", "std", "skew", "round_mean", "circ_mean", "ar_mean", "min_feret_mean"],
+      "supporting": ["kurtosis", "feret_angle_std"]
+    }
+  },
+  "output_constraints": {
+    "max_recommendations": 3,
+    "must_include_references": true,
+    "must_explain_uncertainty": true
+  }
+}
+```
+
+### 12-2. 淹れ方提案用
+
+```json
+{
+  "task_type": "brew_recommendation",
+  "current_sample": {
+    "sample_id": "user_010",
+    "sample_name": "Comandante 24 clicks",
+    "bean_name": "Ethiopia Guji",
+    "origin": "Ethiopia",
+    "process": "washed",
+    "roast_level": "light",
+    "roast_date": "2026-04-10",
+    "brew_method": "V60",
+    "grinder": "Comandante C40",
+    "grinder_burr": "conical",
+    "grind_setting": "24",
+    "distribution_summary": {
+      "kde_peak": 0.45,
+      "mean": 0.79,
+      "std": 0.48,
+      "cv": 0.60,
+      "skew": 1.14,
+      "kurtosis": 1.00,
+      "median": 0.70,
+      "round_mean": 0.70,
+      "circ_mean": 0.57,
+      "ar_mean": 1.44,
+      "min_feret_mean": 0.48,
+      "feret_angle_std": 40.1
+    },
+    "flavor_profile": [
+      "bright acidity",
+      "tea-like",
+      "slightly thin body"
+    ]
+  },
+  "target_context": {
+    "brew_method": "V60",
+    "target_flavor_profile": [
+      "sweet",
+      "clean",
+      "floral"
+    ]
+  },
+  "retrieved_similar_samples": [
+    {
+      "sample_id": "ref_001",
+      "sample_name": "Reference V60 Light Roast",
+      "bean_name": "Ethiopia Guji",
+      "roast_level": "light",
+      "brew_method": "V60",
+      "grinder": "EK43",
+      "grinder_burr": "flat",
+      "grind_setting": "reference",
+      "distribution_summary": {
+        "kde_peak": 0.44,
+        "mean": 0.80,
+        "std": 0.47,
+        "cv": 0.59,
+        "skew": 1.26,
+        "kurtosis": 1.60,
+        "median": 0.70,
+        "round_mean": 0.71,
+        "circ_mean": 0.58,
+        "ar_mean": 1.42,
+        "min_feret_mean": 0.49,
+        "feret_angle_std": 41.2
+      },
+      "flavor_profile": [
+        "floral",
+        "sweet",
+        "clean finish"
+      ]
+    }
+  ],
+  "retrieved_good_examples": [
+    {
+      "sample_id": "ref_010",
+      "grinder": "Comandante C40",
+      "grinder_burr": "conical",
+      "grind_setting": "25",
+      "brew_method": "V60",
+      "flavor_profile": [
+        "balanced sweetness",
+        "clear cup"
+      ]
+    }
+  ],
+  "recommendation_policy": {
+    "feature_priority": {
+      "high": ["kde_peak", "median", "cv"],
+      "medium": ["mean", "std", "skew", "round_mean", "circ_mean", "ar_mean", "min_feret_mean"],
+      "supporting": ["kurtosis", "feret_angle_std"]
+    },
+    "burr_sensitive_features": [
+      "round_mean",
+      "circ_mean",
+      "ar_mean",
+      "min_feret_mean",
+      "feret_angle_std"
+    ],
+    "must_cite_references": true,
+    "avoid_overclaiming": true
+  },
+  "output_constraints": {
+    "max_setting_candidates": 3,
+    "include_adjustment_direction": true,
+    "include_uncertainty": true
+  }
+}
+```
+
+## 13. 今後の実装ステップ案
 
 ### Phase 1
 
@@ -407,7 +697,7 @@ AI はこの情報をもとに、
 - ベクトル検索や複合特徴量検索を検討する
 - フィードバックを学習・改善へ活かせる構成を検討する
 
-## 12. Open Questions
+## 14. Open Questions
 
 - 類似度を何で定義するか
 - `kde_peak` と統計量だけで十分か # TODO:判断の属性の優先順位は必要か？
