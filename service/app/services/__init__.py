@@ -1,3 +1,4 @@
+from .jobs import InMemoryJobStore, job_store
 from .kde_stats import (
     PairwiseTestResult,
     SampleStatistics,
@@ -14,9 +15,11 @@ from .measurement_parser import (
     normalize_measurement_dataframe,
     read_measurement_csv,
 )
+from .pipeline import process_analyze_request, process_compare_request
 from .visualization import build_kde_plot_html, render_kde_plot_svg
 
 __all__ = [
+    "InMemoryJobStore",
     "PairwiseTestResult",
     "SampleStatistics",
     "bootstrap_kurtosis_diff",
@@ -28,7 +31,10 @@ __all__ = [
     "filter_measurement_values",
     "get_measurement_values_from_dataframe",
     "get_measurement_values",
+    "job_store",
     "normalize_measurement_dataframe",
+    "process_analyze_request",
+    "process_compare_request",
     "read_measurement_csv",
     "render_kde_plot_svg",
 ]

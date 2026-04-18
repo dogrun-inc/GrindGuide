@@ -1,38 +1,19 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from pathlib import Path
-from uuid import uuid4
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile, status
 
 try:
-    from ..config import DEFAULT_MAX_FERET_MM, DEFAULT_MIN_AREA_MM2, DEFAULT_MIN_FERET_MM, TMP_DIR
-    from ..models import AnalyzeImagesResponse, CompareCsvRequest, SampleResult, StatisticsSummary
-    from ..services import (
-        build_kde_plot_html,
-        compute_pairwise_tests,
-        compute_sample_statistics,
-        filter_measurement_dataframe,
-        get_measurement_values_from_dataframe,
-        read_measurement_csv,
-        render_kde_plot_svg,
-    )
+    from ..config import TMP_DIR
+    from ..models import CompareCsvRequest, JobAcceptedResponse
+    from ..services import job_store, process_compare_request
 except ImportError:
-    from config import DEFAULT_MAX_FERET_MM, DEFAULT_MIN_AREA_MM2, DEFAULT_MIN_FERET_MM, TMP_DIR
-    from models import AnalyzeImagesResponse, CompareCsvRequest, SampleResult, StatisticsSummary
-    from services import (
-        build_kde_plot_html,
-        compute_pairwise_tests,
-        compute_sample_statistics,
-        filter_measurement_dataframe,
-        get_measurement_values_from_dataframe,
-        read_measurement_csv,
-        render_kde_plot_svg,
-    )
+    from config import TMP_DIR
+    from models import CompareCsvRequest, JobAcceptedResponse
+    from services import job_store, process_compare_request
 
 router = APIRouter(tags=["compare"])
-DEFAULT_COMPARE_ATTRIBUTE = "Feret"
 
 
 def _validate_csv_files(
@@ -62,47 +43,46 @@ def _validate_csv_files(
     return files_by_name
 
 
-def _build_compare_workspace() -> Path:
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    workspace = TMP_DIR / "compare" / f"{timestamp}_{uuid4().hex[:8]}"
+def _build_job_workspace(job_id: str) -> Path:
+    workspace = TMP_DIR / "compare" / job_id
     workspace.mkdir(parents=True, exist_ok=True)
     return workspace
 
 
-def _build_pairwise_test_html(samples_by_label: dict[str, object]) -> tuple[str, str | None]:
-    if len(samples_by_label) != 2:
-        return "", None
-
-    labels = list(samples_by_label.keys())
-    values1 = samples_by_label[labels[0]]
-    values2 = samples_by_label[labels[1]]
-    result = compute_pairwise_tests(values1, values2)
-    significance = "有意差あり" if result.levene_significant else "有意差なし"
-    html = (
-        f"<p><b>Levene検定（分散差）</b>: "
-        f"stat={result.levene_statistic:.4f}, "
-        f"p={result.levene_p_value:.4f} → {significance}</p>"
-        f"<p><b>尖度差（ブートストラップ）</b>: "
-        f"差={result.kurtosis_diff_mean:.4f}, "
-        f"95%CI=({result.kurtosis_ci_lower:.4f}, {result.kurtosis_ci_upper:.4f})</p>"
-    )
-    note = (
-        "Pairwise comparison available: "
-        f"Levene p={result.levene_p_value:.4f}, "
-        f"kurtosis diff mean={result.kurtosis_diff_mean:.4f}"
-    )
-    return html, note
+def _run_compare_job(
+    job_id: str,
+    request_model: CompareCsvRequest,
+    workspace: Path,
+    csv_paths_by_name: dict[str, Path],
+) -> None:
+    try:
+        job_store.mark_running(job_id)
+        result = process_compare_request(
+            request_model=request_model,
+            workspace=workspace,
+            csv_paths_by_name=csv_paths_by_name,
+            progress_callback=lambda completed, current: job_store.update_progress(
+                job_id,
+                completed_samples=completed,
+                current_sample_name=current,
+            ),
+        )
+        job_store.mark_completed(job_id, result)
+    except Exception as exc:
+        job_store.mark_failed(job_id, str(exc))
 
 
 @router.post(
     "/compare/csv",
-    response_model=AnalyzeImagesResponse,
-    summary="Compare uploaded CSV measurement files",
+    response_model=JobAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Queue CSV comparison job",
 )
 async def compare_csv(
+    background_tasks: BackgroundTasks,
     payload: str = Form(..., description="JSON string for CompareCsvRequest"),
     files: list[UploadFile] = File(..., description="Measurement CSV files"),
-) -> AnalyzeImagesResponse:
+) -> JobAcceptedResponse:
     try:
         request_model = CompareCsvRequest.model_validate_json(payload)
     except Exception as exc:
@@ -112,82 +92,26 @@ async def compare_csv(
         ) from exc
 
     files_by_name = _validate_csv_files(request_model, files)
-    workspace = _build_compare_workspace()
-    attribute = DEFAULT_COMPARE_ATTRIBUTE
-    min_feret_mm = DEFAULT_MIN_FERET_MM
-    min_area_mm2 = DEFAULT_MIN_AREA_MM2
-    max_feret_mm = DEFAULT_MAX_FERET_MM
+    job = job_store.create_job("compare", total_samples=len(request_model.samples))
+    workspace = _build_job_workspace(job.job_id)
+    csv_paths_by_name = {}
 
-    try:
-        samples_by_label = {}
-        sample_results = []
+    for file_key, upload in files_by_name.items():
+        csv_path = workspace / file_key
+        csv_path.write_bytes(await upload.read())
+        csv_paths_by_name[file_key] = csv_path
 
-        for sample in request_model.samples:
-            upload = files_by_name[sample.file_key]
-            saved_path = workspace / sample.file_key
-            saved_path.write_bytes(await upload.read())
+    background_tasks.add_task(
+        _run_compare_job,
+        job.job_id,
+        request_model,
+        workspace,
+        csv_paths_by_name,
+    )
 
-            raw_df = read_measurement_csv(saved_path)
-            filtered_df = filter_measurement_dataframe(
-                raw_df,
-                min_feret_mm=min_feret_mm,
-                max_feret_mm=max_feret_mm,
-                min_area_mm2=min_area_mm2,
-            )
-            values = get_measurement_values_from_dataframe(filtered_df, attribute)
-            sample_stats = compute_sample_statistics(values, clip_zero=True)
-            samples_by_label[sample.sample_name] = values
-            sample_results.append(
-                SampleResult(
-                    sample_name=sample.sample_name,
-                    particle_count=int(len(raw_df)),
-                    filtered_particle_count=sample_stats.count,
-                    unit=sample.unit,
-                    raw_csv_path=str(saved_path),
-                    mean=sample_stats.mean,
-                    std=sample_stats.std,
-                    cv=sample_stats.cv,
-                    skew=sample_stats.skew,
-                    kurtosis=sample_stats.kurtosis,
-                    median=sample_stats.median,
-                    kde_peak=sample_stats.kde_peak,
-                )
-            )
-
-        svg_content = render_kde_plot_svg(
-            samples=samples_by_label,
-            attribute=attribute,
-            clip_zero=True,
-            title=f"KDE Plot of {attribute}",
-        )
-        extra_html, pairwise_test_note = _build_pairwise_test_html(samples_by_label)
-        html_content = build_kde_plot_html(
-            svg_content=svg_content,
-            attribute=attribute,
-            comment_text="Uploaded CSV comparison result",
-            extra_html=extra_html,
-        )
-        plot_path = workspace / f"{attribute.lower()}_kde.html"
-        plot_path.write_text(html_content, encoding="utf-8")
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
-        ) from exc
-
-    mean_values = [sample.mean for sample in sample_results if sample.mean is not None]
-    median_values = [sample.median for sample in sample_results if sample.median is not None]
-    return AnalyzeImagesResponse(
-        samples=sample_results,
-        plot_path=str(plot_path),
-        statistics=StatisticsSummary(
-            compared_samples=len(request_model.samples),
-            mean_of_means=(sum(mean_values) / len(mean_values)) if mean_values else None,
-            mean_of_medians=(sum(median_values) / len(median_values)) if median_values else None,
-            attribute=attribute,
-            pairwise_test_note=pairwise_test_note,
-            min_feret_mm=min_feret_mm,
-            min_area_mm2=min_area_mm2,
-            max_feret_mm=max_feret_mm,
-        ),
+    return JobAcceptedResponse(
+        job_id=job.job_id,
+        status=job.status,
+        status_url=f"/api/jobs/{job.job_id}",
+        result_url=f"/api/jobs/{job.job_id}/result",
     )
