@@ -1,0 +1,13 @@
+.git
+.gitignore
+.pytest_cache
+.codex
+__pycache__/
+*.py[cod]
+
+service/app/tmp/
+service/tests/out.csv
+service/tests/out_*.jpg
+
+docker/.DS_Store
+設計資料/.DS_Store

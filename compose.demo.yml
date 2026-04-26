@@ -1,0 +1,18 @@
+services:
+  grindguide-demo:
+    build:
+      context: .
+      dockerfile: docker/demo/Dockerfile
+    container_name: grindguide-demo
+    environment:
+      FIJI_EXECUTABLE: /opt/Fiji.app/ImageJ-linux64
+      FIJI_HEADLESS: "true"
+      DEFAULT_MIN_FERET_MM: "0.2"
+      DEFAULT_MIN_AREA_MM2: "0.02"
+      DEFAULT_MAX_FERET_MM: "3.0"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./service/app/tmp:/workspace/service/app/tmp
+      - ./service/tests:/workspace/service/tests
+    restart: unless-stopped
